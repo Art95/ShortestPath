@@ -11,12 +11,15 @@ import processor.VisibilityGraph;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by Artem on 21.04.2016.
@@ -30,7 +33,13 @@ public class MainForm implements ActionListener {
     private JButton findPathButton;
     private JMenuBar menuBar;
     private JMenu fileMenu;
+    private JMenuItem saveMenuItem;
     private JMenuItem openMenuItem;
+
+    private final String pathFileAddress = ".\\Fields\\Shortest_Path.txt";
+    private final String fieldFileAddress = ".\\Fields\\Field.txt";
+
+    private static final Pattern pointPattern = Pattern.compile("\\([-+]?[0-9]*.?[0-9]+([eE][-+]?[0-9]+)?;\\s?[-+]?[0-9]*.?[0-9]+([eE][-+]?[0-9]+)?\\)");
 
     private List<Polygon> obstacles;
 
@@ -42,7 +51,16 @@ public class MainForm implements ActionListener {
         fileMenu = new JMenu("File");
         openMenuItem = new JMenuItem("Open");
         openMenuItem.addActionListener(this);
+        saveMenuItem = new JMenuItem("Save field");
+        saveMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveField(obstacles, fieldFileAddress);
+                JOptionPane.showMessageDialog(frame, "Filed saved to " + fieldFileAddress);
+            }
+        });
         fileMenu.add(openMenuItem);
+        fileMenu.add(saveMenuItem);
 
         menuBar.add(fileMenu);
         frame.setJMenuBar(menuBar);
@@ -67,7 +85,14 @@ public class MainForm implements ActionListener {
             public void actionPerformed(ActionEvent e) {
                 painter.clearPath();
                 obstacles = formPolygons(textArea1.getText());
-                painter.drawPolygons(obstacles);
+
+                if (obstacles.size() > Constants.MAX_NUMBER_OF_OBSTACLES) {
+                    JOptionPane.showMessageDialog(frame, "To many obstacles. Field won't be shown but shortest path will" +
+                            " be saved to file ." + pathFileAddress);
+                } else {
+                    painter.drawPolygons(obstacles);
+                }
+
                 graph[0] = proc.buildVisibilityGraph(obstacles);
             }
         });
@@ -80,21 +105,22 @@ public class MainForm implements ActionListener {
                 if (tQueryPoints.isEmpty())
                     return;
 
-                String[] coordinates = tQueryPoints.split(";");
-
-                if (coordinates.length < 2) {
-                    textField1.setText("Wrong input");
-                    return;
-                }
+                Matcher matcher = pointPattern.matcher(tQueryPoints);
 
                 Point start = null;
                 Point end = null;
 
-                try {
-                    start = parsePoint(coordinates[0].trim());
-                    end = parsePoint(coordinates[1].trim());
-                } catch (IllegalArgumentException ex) {
-                    textField1.setText("Wrong input. Type here points like this: 25 35; 200 135");
+                if (matcher.find()) {
+                    start = Point.parsePoint(matcher.group(0));
+                } else {
+                    textField1.setText("Wrong input!");
+                    return;
+                }
+
+                if (matcher.find()) {
+                    end = Point.parsePoint(matcher.group(0));
+                } else {
+                    textField1.setText("Wrong input!");
                     return;
                 }
 
@@ -115,7 +141,12 @@ public class MainForm implements ActionListener {
                     return;
                 }
 
-                painter.drawPath(path);
+                if (obstacles.size() > Constants.MAX_NUMBER_OF_OBSTACLES) {
+                    savePathToFile(pathFileAddress, path);
+                    JOptionPane.showMessageDialog(frame, "Path saved to " + pathFileAddress);
+                } else {
+                    painter.drawPath(path);
+                }
             }
         });
 
@@ -163,15 +194,7 @@ public class MainForm implements ActionListener {
         String[] polygonsData = data.split("\n");
 
         for (String polygonData : polygonsData) {
-            LinkedList<Point> points = new LinkedList<>();
-            String[] tPoints = polygonData.split("\t");
-
-            for (String tPoint : tPoints) {
-                Point p = parsePoint(tPoint.trim());
-                points.add(p);
-            }
-
-            Polygon polygon = new Polygon(points);
+            Polygon polygon = Polygon.parsePolygon(polygonData.trim());
             obstacles.add(polygon);
         }
 
@@ -236,17 +259,41 @@ public class MainForm implements ActionListener {
         return chosen;
     }
 
-    private Point parsePoint(String data) {
-        String[] coordinates = data.split(" ");
+    private void savePathToFile(String fileAddress, List<Point> path) {
+        try {
+            Writer writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(fileAddress), "utf-8"));
 
-        if (coordinates.length != 2)
-            throw new IllegalArgumentException("Error while reading point " + data);
+            Collections.reverse(path);
 
-        double x = Double.parseDouble(coordinates[0].trim());
-        double y = Double.parseDouble(coordinates[1].trim());
+            for (Point p : path) {
+                writer.write(p.toString());
+            }
 
-        Point p = new Point(new CartesianCoordinates(x, y));
+            writer.close();
 
-        return p;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void saveField(List<Polygon> polygons, String address) {
+        try {
+            List<String> lines = obstaclesToString(polygons);
+            Path file = Paths.get(address);
+            Files.write(file, lines, Charset.forName("UTF-8"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private List<String> obstaclesToString(List<Polygon> polygons) {
+        List<String> lines = new ArrayList<>();
+
+        for (Polygon polygon : polygons) {
+            lines.add(polygon.toString());
+        }
+
+        return lines;
     }
 }
