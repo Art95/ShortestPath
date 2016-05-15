@@ -73,10 +73,36 @@ public class MainForm implements ActionListener {
         randomFieldButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                String s = (String)JOptionPane.showInputDialog(frame, "How many obstacles?");
+
+                //If a string was returned, say so.
+                if (s == null || s.length() == 0) {
+                    return;
+                }
+
+                int obstaclesNumber = Integer.parseInt(s);
+
+                textArea1.setText("Generating...");
                 painter.clearPath();
-                obstacles = generateRandomObstacles();
-                painter.drawPolygons(obstacles);
+                obstacles = generateRandomObstacles(obstaclesNumber);
+
+                if (obstacles.size() > Constants.MAX_NUMBER_OF_OBSTACLES) {
+                    JOptionPane.showMessageDialog(frame, "To many obstacles. Field won't be shown but shortest path will" +
+                            " be saved to file ." + pathFileAddress);
+                } else {
+                    painter.drawPolygons(obstacles);
+                }
+
                 graph[0] = proc.buildVisibilityGraph(obstacles);
+
+                textArea1.setText("");
+
+                List<String> lines = obstaclesToString(obstacles);
+
+                for (String line : lines) {
+                    textArea1.append(line);
+                    textArea1.append("\n");
+                }
             }
         });
 
@@ -201,8 +227,10 @@ public class MainForm implements ActionListener {
         return obstacles;
     }
 
-    private List<Polygon> generateRandomObstacles() {
-        int numberOfObstacles = Constants.MAX_NUMBER_OF_OBSTACLES;
+    private List<Polygon> generateRandomObstacles(int numberOfObstacles) {
+        if (numberOfObstacles <= 0) {
+            throw new IllegalArgumentException("Number of obstacles should be greater than zero");
+        }
 
         List<Polygon> obstacles = new ArrayList<>();
 
