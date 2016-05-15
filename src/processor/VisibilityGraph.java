@@ -1,7 +1,8 @@
 package processor;
 
 import geometry.Point;
-import processor.Processor;
+import org.jgrapht.util.FibonacciHeap;
+import org.jgrapht.util.FibonacciHeapNode;
 
 import java.io.File;
 import java.io.FileInputStream;
