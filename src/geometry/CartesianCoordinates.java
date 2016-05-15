@@ -88,7 +88,7 @@ public class CartesianCoordinates {
         if (text.isEmpty())
             throw new IllegalArgumentException("Cartesian coordinates: Can't parse empty string!");
 
-        if (text.charAt(0) != text.charAt(text.length() - 1) || text.charAt(0) != '(')
+        if (text.charAt(0) != '(' || text.charAt(text.length() - 1) != ')')
             throw new IllegalArgumentException("Cartesian coordinates: Wrong input format! Can't parse " + text);
 
         text = text.substring(1, text.length() - 1);
