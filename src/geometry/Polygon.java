@@ -3,6 +3,7 @@ package geometry;
 import utils.LinkedList;
 
 import java.awt.*;
+import java.awt.geom.PathIterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,6 +56,12 @@ public class Polygon {
                 return generateTriangle(area, orientation);
             case DIAMOND:
                 return generateDiamond(area);
+            case STAR:
+                return generateStar(area);
+            case FIGURE_1:
+                return generateFigure1(area, orientation);
+            case SANDCLOCK:
+                return generateSandClock(area, orientation);
             default:
                 throw new IllegalArgumentException("Unknown polygon type " + type);
         }
@@ -229,7 +236,7 @@ public class Polygon {
         LinkedList<Point> points = new LinkedList<>();
 
         while (matcher.find()) {
-            Point p = Point.parsePoint(matcher.group(0));
+            Point p = Point.parsePoint(matcher.group(0).trim());
             points.add(p);
         }
 
@@ -382,6 +389,127 @@ public class Polygon {
         points.add(p1);
         points.add(p2);
         points.add(p3);
+
+        return new Polygon(points);
+    }
+
+    private static Polygon generateStar(Area area) {
+        Point p1 = new Point(new CartesianCoordinates(area.x + area.width / 2, area.y));
+        Point p2 = new Point(new CartesianCoordinates(area.x + area.width * 2/3, area.y + area.height * 1/3));
+        Point p3 = new Point(new CartesianCoordinates(area.x + area.width, area.y + area.height / 2));
+        Point p4 = new Point(new CartesianCoordinates(area.x + area.width * 2/3, area.y + area.height * 2/3));
+        Point p5 = new Point(new CartesianCoordinates(area.x + area.width / 2, area.y + area.height));
+        Point p6 = new Point(new CartesianCoordinates(area.x + area.width * 1/3, area.y + area.height * 2/3));
+        Point p7 = new Point(new CartesianCoordinates(area.x, area.y + area.height / 2));
+        Point p8 = new Point(new CartesianCoordinates(area.x + area.width * 1/3, area.y + area.height * 1/3));
+
+        LinkedList<Point> points = new LinkedList<>();
+        points.add(p1);
+        points.add(p2);
+        points.add(p3);
+        points.add(p4);
+        points.add(p5);
+        points.add(p6);
+        points.add(p7);
+        points.add(p8);
+
+        return new Polygon(points);
+    }
+
+    private static Polygon generateFigure1(Area area, Orientation orientation) {
+        Point p1 = new Point();
+        Point p2 = new Point();
+        Point p3 = new Point();
+        Point p4 = new Point();
+
+        LinkedList<Point> points = new LinkedList<>();
+
+        if (orientation == Orientation.DEFAULT)
+            orientation = Orientation.UP;
+
+        switch (orientation) {
+            case UP:
+                p1.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y));
+                p2.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width / 2, area.y + area.height * 1/3));
+                p3.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y));
+                p4.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width / 2, area.y + area.height));
+                break;
+            case DOWN:
+                p1.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width / 2, area.y));
+                p2.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y + area.height));
+                p3.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width / 2, area.y + area.height * 2/3));
+                p4.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y + area.height));
+                break;
+            case LEFT:
+                p1.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y));
+                p2.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width * 2/3, area.y + area.height / 2));
+                p3.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y + area.height));
+                p4.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y + area.height / 2));
+                break;
+            case RIGHT:
+                p1.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y));
+                p2.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y + area.height / 2));
+                p3.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y + area.height));
+                p4.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width * 1/3, area.y + area.height / 2));
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown orientation " + orientation);
+        }
+
+        points.add(p1);
+        points.add(p2);
+        points.add(p3);
+        points.add(p4);
+
+        return new Polygon(points);
+    }
+
+    private static Polygon generateSandClock(Area area, Orientation orientation) {
+        Point p1 = new Point();
+        Point p2 = new Point();
+        Point p3 = new Point();
+        Point p4 = new Point();
+        Point p5 = new Point();
+        Point p6 = new Point();
+
+        LinkedList<Point> points = new LinkedList<>();
+
+        if (orientation == Orientation.DEFAULT)
+            orientation = Orientation.UP;
+
+        if (orientation == Orientation.DOWN)
+            orientation = Orientation.UP;
+
+        if (orientation == Orientation.RIGHT)
+            orientation = Orientation.LEFT;
+
+        switch (orientation) {
+            case UP:
+                p1.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y));
+                p2.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y));
+                p3.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width * 2/3, area.y + area.height / 2));
+                p4.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y + area.height));
+                p5.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y + area.height));
+                p6.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width * 1/3, area.y + area.height / 2));
+                break;
+            case LEFT:
+                p1.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y));
+                p2.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width / 2, area.y + area.height * 1/3));
+                p3.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y));
+                p4.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width, area.y + area.height));
+                p5.setCartesianCoordinates(new CartesianCoordinates(area.x + area.width / 2, area.y + area.height * 2/3));
+                p6.setCartesianCoordinates(new CartesianCoordinates(area.x, area.y + area.height));
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown orientation " + orientation);
+        }
+
+        points.add(p1);
+        points.add(p2);
+        points.add(p3);
+        points.add(p4);
+        points.add(p5);
+        points.add(p6);
 
         return new Polygon(points);
     }

@@ -11,7 +11,10 @@ import java.util.Random;
 public enum PolygonType {
     SQUARE,
     TRIANGLE,
-    DIAMOND;
+    STAR,
+    DIAMOND,
+    SANDCLOCK,
+    FIGURE_1;
 
     public static PolygonType randomType()  {
         return TYPES.get(RANDOM.nextInt(SIZE));
