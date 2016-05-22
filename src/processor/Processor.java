@@ -18,6 +18,8 @@ public class Processor {
     private static Polygon surroundingPolygon;
     private static final double INF = 10000000;
 
+    private static Set<Point> pointsNotInProcess;
+
     public static VisibilityGraph buildVisibilityGraph(List<Polygon> polygons) {
         initialize(polygons);
 
@@ -45,18 +47,37 @@ public class Processor {
     private static HashMap<Point, Double> getVisibleVertices(Point v, boolean rightSide) {
         HashMap<Point, Double> visiblePoints = new HashMap<>();
         List<Point> points = new ArrayList<>();
+        pointsNotInProcess = new HashSet<>();
 
         Segment ray = new Segment(v, new Point(new CartesianCoordinates(v.getX(), INF)));
 
         PointAngleComparator pointComparator = new PointAngleComparator(v, rightSide);
-        //TreeSet<Segment> status = new TreeSet<>(new SegmentDistanceComparator(ray, pointComparator));
-        HashSet<Segment> status = new HashSet<>();
+        //TreeSet<Segment> status = new TreeSet<>(new SegmentDistanceComparator2(ray, pointComparator));
+        TreeSet<Segment> status = new TreeSet<>(new SegmentDistanceComparator2(v, pointComparator));
+        //List<Segment> segments = new ArrayList<>();
 
-        for (Polygon polygon : allPolygons) {
+        /*for (Polygon polygon : allPolygons) {
+            for (Segment seg : polygon.getSegments())
+                segments.add(seg);
+        }*/
+
+        /*Collections.sort(segments, new SegmentDistanceComparator2(v, pointComparator));
+
+        Map<Segment, Integer> segmentOrderSegments = new HashMap<>();
+        Map<Integer, Segment> segmentOrderIntegers = new HashMap<>();*/
+
+        /*for (int i = 0; i < segments.size(); ++i) {
+            segmentOrderSegments.put(segments.get(i), i);
+            segmentOrderIntegers.put(i, segments.get(i));
+        }*/
+
+        //HashSet<Segment> status = new HashSet<>();
+
+        /*for (Polygon polygon : allPolygons) {
             for (Segment seg : polygon.getSegments())
                 if (ray.intersects(seg) && !v.getSegments().contains(seg))
-                    status.add(seg);
-        }
+                    status.add(segmentOrderSegments.get(seg));
+        }*/
 
         for (Point p : allPoints) {
             if (!p.equals(v)){
@@ -64,6 +85,15 @@ public class Processor {
                     points.add(p);
                 else if (!rightSide && v.getX() >= p.getX())
                     points.add(p);
+                else
+                    pointsNotInProcess.add(p);
+            }
+        }
+
+        for (Polygon polygon : allPolygons) {
+            for (Segment seg : polygon.getSegments()) {
+                if (ray.intersects(seg) && !v.getSegments().contains(seg))
+                    status.add(seg);
             }
         }
 
@@ -82,10 +112,11 @@ public class Processor {
                 if (status.isEmpty() && !isInteriorDiagonal(ray)) {
                     visiblePoints.put(p, v.distanceToPoint(p));
                 } else if (!status.isEmpty()) {
-                    Segment closestSegment = getClosestSegment(status, ray, pointComparator);
+                    Segment closestSegment = getClosestSegment1(status, ray, pointComparator);
+                    //Segment closestSegment = getClosestSegment(status, ray, pointComparator);
                     Point intersection = ray.getIntersection(closestSegment);
-                    //Segment closestSegment = status.first();
-                    //Point intersection = ray.getIntersection(closestSegment);
+                    //Integer closestSegmentIndex = status.first();
+                    //Point intersection = ray.getIntersection(segmentOrderIntegers.get(closestSegmentIndex));
 
                     if (intersection == null && !isInteriorDiagonal(ray))
                         visiblePoints.put(p, v.distanceToPoint(p));
@@ -94,13 +125,18 @@ public class Processor {
                         visiblePoints.put(p, v.distanceToPoint(p));
                 }
 
-                Set<Segment> segments = p.getSegments();
+                Set<Segment> pointSegments = p.getSegments();
 
-                for (Segment seg : segments) {
-                    if (pointComparator.compare(p, seg.getAnotherEnd(p)) < 0)
-                        status.add(seg);
-                    else
+                for (Segment seg : pointSegments) {
+                    if (!segmentStartsInPoint(seg, p, v, rightSide)) {
                         status.remove(seg);
+                    }
+                }
+
+                for (Segment seg : pointSegments) {
+                    if (segmentStartsInPoint(seg, p, v, rightSide)) {
+                        status.add(seg);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -111,6 +147,8 @@ public class Processor {
             Point p = seg.getAnotherEnd(v);
             visiblePoints.put(p, v.distanceToPoint(p));
         }
+
+        pointsNotInProcess.clear();
 
         return visiblePoints;
     }
@@ -239,21 +277,25 @@ public class Processor {
         Point w_next = polygon.getNextPoint(w);
         Point w_prev = polygon.getPreviousPoint(w);
 
-        boolean vRightTurn = isRightTurn(v_next, v, w);
-        boolean vLeftTurn = isLeftTurn(v_prev, v, w);
+        boolean vRightTurn = isRightTurn(v_next, v, w) || noTurn(v_next, v, w);
+        boolean vLeftTurn = isLeftTurn(v_prev, v, w) || noTurn(v_prev, v, w);
 
-        boolean wRightTurn = isRightTurn(w_next, w, v);
-        boolean wLeftTurn = isLeftTurn(w_prev, w, v);
+        boolean wRightTurn = isRightTurn(w_next, w, v) || noTurn(w_next, w, v);
+        boolean wLeftTurn = isLeftTurn(w_prev, w, v) || noTurn(w_prev, w, v);
 
         return (vRightTurn && vLeftTurn) || (wRightTurn && wLeftTurn);
     }
 
     private static boolean isLeftTurn(Point b, Point a, Point c) {
-        return getTurn(b, a, c) >= 0;
+        return getTurn(b, a, c) > 0;
     }
 
     private static boolean isRightTurn(Point b, Point a, Point c) {
-        return getTurn(b, a, c) <= 0;
+        return getTurn(b, a, c) < 0;
+    }
+
+    private static boolean noTurn(Point b, Point a, Point c) {
+        return getTurn(b, a, c) == 0;
     }
 
     private static double getTurn(Point b, Point a, Point c) {
@@ -288,6 +330,110 @@ public class Processor {
         }
 
         return null;
+    }
+
+    private static class SegmentDistanceComparator2 implements Comparator<Segment> {
+        private Point basePoint;
+        private PointAngleComparator pComparator;
+
+        public SegmentDistanceComparator2(Point basePoint, PointAngleComparator pointComparator) {
+            this.basePoint = basePoint;
+            this.pComparator = pointComparator;
+        }
+
+        @Override
+        public int compare(Segment segment1, Segment segment2) {
+            if (segment1.equals(segment2))
+                return 0;
+
+            Point segment1Start = (pComparator.compare(segment1.getFirstPoint(), segment1.getSecondPoint()) < 0) ?
+                    segment1.getFirstPoint() : segment1.getSecondPoint();
+            Point segment1End = segment1.getAnotherEnd(segment1Start);
+
+            Point segment2Start = (pComparator.compare(segment2.getFirstPoint(), segment2.getSecondPoint()) < 0) ?
+                    segment2.getFirstPoint() : segment2.getSecondPoint();
+            Point segment2End = segment2.getAnotherEnd(segment2Start);
+            
+            if (segment1Start.equals(segment2Start)) { //start in one point
+                //return isRightTurn(segment1End, segment2Start, segment2End) ? -1 : 1;
+                if (isRightTurn(segment1End, segment2Start, segment2End)) {
+                    return pComparator.isClockwise() ? -1 : 1;
+                } else {
+                    return pComparator.isClockwise() ? 1 : -1;
+                }
+            }
+
+            if (segment1End.equals(segment2End)) { //finish in one point
+                //return isRightTurn(segment2Start, segment2End, segment1Start) ? -1 : 1;
+
+                if (isRightTurn(segment2Start, segment2End, segment1Start)) {
+                    return pComparator.isClockwise() ? -1 : 1;
+                } else {
+                    return pComparator.isClockwise() ? 1 : -1;
+                }
+            }
+
+            //if collinear, then compare segment1Start and segment2Start
+            if (noTurn(basePoint, segment1Start, segment2Start)) {
+                return collinear_are_ordered_along_line(basePoint, segment1Start, segment2Start);
+            }
+
+            //a < b  if  segment2Start is behind a  or  b begins before a && segment2End is behind a
+            if (pComparator.isClockwise()) {
+                if ((isRightTurn(basePoint, segment1Start, segment2Start) && isRightTurn(segment1End, segment1Start, segment2Start)) ||
+                        (isLeftTurn(basePoint, segment1Start, segment2Start) && isRightTurn(segment2Start, segment2End, segment1Start))) {
+                    return -1;
+                    //return pComparator.isClockwise() ? -1 : 1;
+                } else {
+                    return 1;
+                    //return pComparator.isClockwise() ? 1 : -1;
+                }
+            } else {
+                if (isRightTurn(basePoint, segment1Start, segment2Start) && isLeftTurn(segment2Start, segment2End, segment1Start)) {
+                    return -1;
+                } else if (isLeftTurn(basePoint, segment1Start, segment2Start) && isLeftTurn(segment1Start, segment2Start, segment1End)) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            }
+        }
+
+        int collinear_are_ordered_along_line(Point a, Point b, Point c) {
+            if ((Point.compareByCoordinates(a, b) <= 0 && Point.compareByCoordinates(b, c) <= 0) ||
+                    (Point.compareByCoordinates(c, b) <= 0 && Point.compareByCoordinates(b, a) <= 0)) {
+                return -1;
+            } else {
+                return 1;
+            }
+        }
+    }
+
+    private static class SegmentDistanceComparator1 implements Comparator<Segment> {
+        private PointAngleComparator pointComparator;
+        private Point basePoint;
+
+        public SegmentDistanceComparator1(Point basePoint, PointAngleComparator pointComparator) {
+            this.pointComparator = pointComparator;
+            this.basePoint = basePoint;
+        }
+
+        @Override
+        public int compare(Segment segment1, Segment segment2) {
+            if (segment1.equals(segment2))
+                return 0;
+
+            Point seg1Point = (pointComparator.compare(segment1.getFirstPoint(), segment1.getSecondPoint()) < 0) ?
+                    segment1.getFirstPoint() : segment1.getSecondPoint();
+
+            Point seg2Point = (pointComparator.compare(segment2.getFirstPoint(), segment2.getSecondPoint()) < 0) ?
+                    segment2.getFirstPoint() : segment2.getSecondPoint();
+
+            double dist1 = basePoint.distanceToPoint(seg1Point);
+            double dist2 = basePoint.distanceToPoint(seg2Point);
+
+            return (int)(dist1 - dist2);
+        }
     }
 
     private static class SegmentDistanceComparator implements Comparator<Segment> {
@@ -395,6 +541,34 @@ public class Processor {
             if (p2.equals(basePoint))
                 return 1;
 
+            if (pointsNotInProcess.contains(p1) && pointsNotInProcess.contains(p2)) {
+                if (p1.getY() > basePoint.getY() && p2.getY() < basePoint.getY()) {
+                    return -1;
+                } else if (p1.getY() < basePoint.getY() && p2.getY() > basePoint.getY()) {
+                    return 1;
+                } else if (p1.getY() > basePoint.getY() && p2.getY() > basePoint.getY()){
+                    if (p1.getX() < p2.getY()) {
+                        return clockwise ? -1 : 1;
+                    } else if (p1.getX() > p2.getX()) {
+                        return clockwise ? 1 : -1;
+                    } else {
+                        return (p1.getY() < p2.getY()) ? -1 : 1;
+                    }
+                }
+            } else if (pointsNotInProcess.contains(p1)) {
+                if (p1.getY() > basePoint.getY()) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            } else if (pointsNotInProcess.contains(p2)) {
+                if (p2.getY() > basePoint.getY()) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            }
+
             Segment s1 = new Segment(basePoint, p1);
             Segment s2 = new Segment(basePoint, p2);
 
@@ -439,6 +613,10 @@ public class Processor {
             return sgn1 < sgn2 == !clockwise ? -1 : 1;
         }
 
+        public boolean isClockwise() {
+            return clockwise;
+        }
+
         private int sgnMultiplySegments(Segment s1, Segment s2) {
             double x1 = s1.getSecondPoint().getX() - s1.getFirstPoint().getX();
             double y1 = s1.getSecondPoint().getY() - s1.getFirstPoint().getY();
@@ -464,11 +642,48 @@ public class Processor {
         SegmentDistanceComparator comparator = new SegmentDistanceComparator(baseSegment, pointAngleComparator);
         Segment closest = null;
 
+
         for (Segment seg : status) {
             if (closest == null || comparator.compare(closest, seg) > 0)
                 closest = seg;
         }
 
         return closest;
+    }
+
+    private static Segment getClosestSegment1(Set<Segment> status, Segment baseSegment, PointAngleComparator pointAngleComparator) {
+        SegmentDistanceComparator comparator = new SegmentDistanceComparator(baseSegment, pointAngleComparator);
+        Segment closest = null;
+        int counter = 0;
+
+        for (Segment seg : status) {
+            if (closest == null || comparator.compare(closest, seg) > 0)
+                closest = seg;
+
+            if (counter == 1)
+               break;
+
+            ++counter;
+        }
+
+        return closest;
+    }
+
+    private static boolean segmentStartsInPoint(Segment segment, Point p, Point basePoint, boolean clockwise) {
+        Point anotherEnd = segment.getAnotherEnd(p);
+
+        if (anotherEnd == null)
+            return false;
+
+        if (clockwise && isLeftTurn(basePoint, anotherEnd, p)) {
+            return true;
+        } else if (!clockwise && isRightTurn(basePoint, anotherEnd, p)) {
+            return true;
+        } else if (noTurn(basePoint, anotherEnd, p)) {
+            if (basePoint.distanceToPoint(p) < basePoint.distanceToPoint(anotherEnd))
+                return true;
+        }
+
+        return false;
     }
 }
