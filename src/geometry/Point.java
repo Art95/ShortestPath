@@ -131,4 +131,22 @@ public class Point {
     public static Point parsePoint(String text) {
         return new Point(CartesianCoordinates.parseCartesianCoordinates(text));
     }
+
+    public static int compareByCoordinates(Point p1, Point p2) {
+        if (p1.equals(p2))
+            return 0;
+
+        if (p1.getX() < p2.getX())
+            return -1;
+        else if (p1.getX() > p2.getX())
+            return 1;
+        else {
+            if (p1.getY() < p2.getY())
+                return -1;
+            else if (p1.getY() > p2.getY())
+                return 1;
+            else
+                return 0;
+        }
+    }
 }

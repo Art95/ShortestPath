@@ -77,42 +77,29 @@ public class Main {
 
         LinkedList<Point> surroundingPoints = new LinkedList<>();
         Point sPoint1 = new Point(new CartesianCoordinates(5, 5));
-        Point sPoint2 = new Point(new CartesianCoordinates(5, 105));
-        Point sPoint3 = new Point(new CartesianCoordinates(50, 105));
-        Point sPoint4 = new Point(new CartesianCoordinates(50, 145));
-        Point sPoint5 = new Point(new CartesianCoordinates(5, 145));
-        Point sPoint6 = new Point(new CartesianCoordinates(5, 700));
-        Point sPoint7 = new Point(new CartesianCoordinates(1220, 700));
-        Point sPoint8 = new Point(new CartesianCoordinates(1220, 5));
-        Point sPoint9 = new Point(new CartesianCoordinates(5, 200));
-        Point sPoint10 = new Point(new CartesianCoordinates(50, 200));
-        Point sPoint11 = new Point(new CartesianCoordinates(50, 300));
-        Point sPoint12 = new Point(new CartesianCoordinates(5, 300));
-        Point sPoint13 = new Point(new CartesianCoordinates(1220, 500));
-        Point sPoint14 = new Point(new CartesianCoordinates(1150, 450));
-        Point sPoint15 = new Point(new CartesianCoordinates(1220, 400));
-        Point sPoint16 = new Point(new CartesianCoordinates(1220, 300));
-        Point sPoint17 = new Point(new CartesianCoordinates(1100, 250));
-        Point sPoint18 = new Point(new CartesianCoordinates(1220, 200));
+        Point sPoint2 = new Point(new CartesianCoordinates(1220, 5));
+        Point sPoint3 = new Point(new CartesianCoordinates(1220, 200));
+        Point sPoint4 = new Point(new CartesianCoordinates(1100, 300));
+        Point sPoint5 = new Point(new CartesianCoordinates(1220, 500));
+        Point sPoint6 = new Point(new CartesianCoordinates(1220, 700));
+        Point sPoint7 = new Point(new CartesianCoordinates(5, 700));
+        Point sPoint8 = new Point(new CartesianCoordinates(5, 400));
+        Point sPoint9 = new Point(new CartesianCoordinates(100, 400));
+        Point sPoint10 = new Point(new CartesianCoordinates(100, 200));
+        Point sPoint11 = new Point(new CartesianCoordinates(5, 200));
 
         surroundingPoints.add(sPoint1);
         surroundingPoints.add(sPoint2);
         surroundingPoints.add(sPoint3);
         surroundingPoints.add(sPoint4);
         surroundingPoints.add(sPoint5);
+        surroundingPoints.add(sPoint6);
+        surroundingPoints.add(sPoint7);
+        surroundingPoints.add(sPoint8);
         surroundingPoints.add(sPoint9);
         surroundingPoints.add(sPoint10);
         surroundingPoints.add(sPoint11);
-        surroundingPoints.add(sPoint12);
-        surroundingPoints.add(sPoint6);
-        surroundingPoints.add(sPoint7);
-        surroundingPoints.add(sPoint13);
-        surroundingPoints.add(sPoint14);
-        surroundingPoints.add(sPoint15);
-        surroundingPoints.add(sPoint16);
-        surroundingPoints.add(sPoint17);
-        surroundingPoints.add(sPoint18);
-        surroundingPoints.add(sPoint8);
+
         Polygon surrounding = new Polygon(surroundingPoints);
 
         List<Polygon> polygons = new ArrayList<>();
@@ -120,16 +107,31 @@ public class Main {
         polygons.add(new Polygon(points));
         polygons.add(new Polygon(ppoints));
 
+        /*Polygon square1 = Polygon.generatePolygon(PolygonType.SQUARE, new Area(0, 0, 500, 500), Orientation.DEFAULT);
+        //Polygon square2 = Polygon.generatePolygon(PolygonType.SQUARE, new Area(100, 100, 300, 300), Orientation.DEFAULT);
+        List<Polygon> polygons = new ArrayList<>();
+        polygons.add(square1);
+        polygons.add(square2);*/
+
+        /*Polygon sPoly = Polygon.generatePolygon(PolygonType.SQUARE, new Area(0, 0, 700, 700), Orientation.DEFAULT);
+        Polygon square = Polygon.generatePolygon(PolygonType.SQUARE, new Area(400, 400, 100, 100), Orientation.DEFAULT);
+        Polygon diam = Polygon.generatePolygon(PolygonType.DIAMOND, new Area(100, 100, 200, 200), Orientation.DEFAULT);
+        List<Polygon> polygons = new ArrayList<>();
+        polygons.add(sPoly);
+        polygons.add(square);
+        polygons.add(diam);*/
+
         Painter painter = new Painter();
         painter.drawPolygons(polygons);
 
         VisibilityGraph graph = Processor.buildVisibilityGraph(polygons);
 
-        Point start = new Point(new CartesianCoordinates(10, 40));
-        Point end = new Point(new CartesianCoordinates(10, 630));
+        Point start = new Point(new CartesianCoordinates(10, 10));
+        Point end = new Point(new CartesianCoordinates(600, 200));
 
-        //Point p = new Point(new CartesianCoordinates(185, 220));
-        //painter.drawVisibilitySegment(sPoint17, graph.getVisibleVertexes(sPoint17));
+        //Point p = new Point(new CartesianCoordinates(200, 300));
+        //Point p = end;
+        //painter.drawVisibilitySegment(p, graph.getVisibleVertexes(p));
 
 
         List<Point> path = graph.getShortestPath(start, end);
@@ -138,6 +140,9 @@ public class Main {
             System.out.println("Point inside obstacle");
         else
             painter.drawPath(path);
+
+        painter.drawVisibilitySegment(start, graph.getVisibleVertexes(start));
+        painter.drawVisibilitySegment(end, graph.getVisibleVertexes(end));
 
         graph.removeQueryPoints(start, end);
     }

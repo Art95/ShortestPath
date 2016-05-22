@@ -12,7 +12,7 @@ public class Constants {
     public final static int BLOCK_WIDTH = 30;
     public final static int BLOCK_HEIGHT = 30;
 
-    public final static int MAX_NUMBER_OF_OBSTACLES = 500;
+    public final static int MAX_NUMBER_OF_OBSTACLES = 600;
 
     public static final double EPS = 0.00001;
 

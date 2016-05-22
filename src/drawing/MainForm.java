@@ -173,6 +173,8 @@ public class MainForm implements ActionListener {
                 } else {
                     painter.drawPath(path);
                 }
+
+                graph[0].removeQueryPoints(start, end);
             }
         });
 
